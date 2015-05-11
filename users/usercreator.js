@@ -48,7 +48,7 @@ function createUser(execlib,ParentUser){
     this.produceChallenge(offering,bidticket,cd);
     cd.done(
       this._onChallengeProduced.bind(this,defer,bidticket),
-      defer.reject.bind(defer);
+      defer.reject.bind(defer)
     );
   };
   User.prototype.respond = function(bidticket,response,defer){
