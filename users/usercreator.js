@@ -19,7 +19,10 @@ function createUser(execlib,ParentUser){
       defer.resolve({ok:bidticket});
     }else{
       this.__service.bids.replace(bidticket,challenge);
-      defer.resolve({c:challenge});
+      if(challenge.timeout){
+        lib.runNext(this.__service.bids.remove.bind(this.__service.bids,bidticket),challenge.timeout*1000);
+      }
+      defer.resolve({bid:bidticket,c:challenge});
     }
   };
   User.prototype._onResponseChecked = function(defer,bidticket,newchallenge){
@@ -46,21 +49,22 @@ function createUser(execlib,ParentUser){
     }
     var cd = q.defer();
     this.produceChallenge(offering,bidticket,cd);
-    cd.done(
+    cd.promise.done(
       this._onChallengeProduced.bind(this,defer,bidticket),
       defer.reject.bind(defer)
     );
   };
   User.prototype.respond = function(bidticket,response,defer){
-    var challenge = this.__service.bids(bidticket);
+    var challenge = this.__service.bids.get(bidticket);
     if(!challenge){
       defer.reject('No challenge for bidticket '+bidticket);
       return;
     }
-    this.checkChallengeResponse(challenge,response,rd);
-    rd.done(
+    var rd = q.defer();
+    this.checkChallengeResponse(bidticket,challenge,response,rd);
+    rd.promise.done(
       this._onResponseChecked.bind(this,defer,bidticket),
-      defer.reject.bind(d)
+      defer.reject.bind(rd)
     );
   };
   User.prototype.canAcceptMoreBids = function(){
