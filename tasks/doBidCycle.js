@@ -44,6 +44,10 @@ function createDoBidCycleTask(execlib){
     this.destroy();
   };
   DoBidCycleTask.prototype.respondToChallenge = function(bidticket,response){
+    if(response === null){
+      this.destroy();
+      return;
+    }
     this.sink.call('respond',bidticket,response).done(
       this.onResponseResult.bind(this),
       this.onResponseFailed.bind(this,response)
