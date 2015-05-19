@@ -12,7 +12,7 @@ function createDoBidCycleTask(execlib){
     if('function' !== typeof this.cb){
       throw new lib.Error('CB_NOT_A_FUNCTION');
     }
-    this.sink.extendTo(this.sink.destroyed.attach(this.destroy.bind(this)));
+    this.sink.destroyed.attachForSingleShot(this.destroy.bind(this));
   }
   DoBidCycleTask.prototype.destroy = function(){
     this.challengeProducer = null;
