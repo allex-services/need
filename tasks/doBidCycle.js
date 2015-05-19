@@ -27,10 +27,14 @@ function createDoBidCycleTask(execlib){
     );
   };
   DoBidCycleTask.prototype.onBidResult = function(bidresult){
+    if(!bidresult.bid){
+      this.destroy();
+      return;
+    }
     if(bidresult.c){
       var defer = q.defer();
       this.challengeProducer(bidresult.c,defer);
-      defer.done(
+      defer.promise.done(
         this.respondToChallenge.bind(this,bidresult.bid),
         this.destroy.bind(this)
       );
@@ -40,7 +44,7 @@ function createDoBidCycleTask(execlib){
     }
   };
   DoBidCycleTask.prototype.onBidFailed = function(reason){
-    console.log('bid failed',reason);
+    console.log('For bid object',this.bidobject,'bid failed',reason);
     this.destroy();
   };
   DoBidCycleTask.prototype.respondToChallenge = function(bidticket,response){
@@ -60,6 +64,10 @@ function createDoBidCycleTask(execlib){
       this.cb(responseresult.a);
       this.destroy();
     }
+  };
+  DoBidCycleTask.prototype.onResponseFailed = function(response,reason){
+    console.error('For original response',response,'Error was thrown',reason);
+    this.destroy();
   };
   DoBidCycleTask.prototype.compulsoryConstructionProperties = ['sink','bidobject','challengeProducer','cb'];
   return DoBidCycleTask;
