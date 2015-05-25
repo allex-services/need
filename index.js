@@ -7,7 +7,7 @@ function createServicePack(execlib){
     SinkMap: require('./sinkmapcreator')(execlib,ParentServicePack),
     Tasks: [{
       name: 'doBidCycle',
-      constructor: require('./tasks/doBidCycle')(execlib)
+      klass: require('./tasks/doBidCycle')(execlib)
     }]
   };
 }

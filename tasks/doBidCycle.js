@@ -2,9 +2,9 @@ function createDoBidCycleTask(execlib){
   var lib = execlib.lib,
       q = lib.q,
       execSuite = execlib.execSuite,
-      Task = execSuite.Task;
+      SinkTask = execSuite.SinkTask;
   function DoBidCycleTask(prophash){
-    Task.call(this,prophash);
+    SinkTask.call(this,prophash);
     this.sink = prophash.sink;
     this.bidobject = prophash.bidobject;
     this.challengeProducer = prophash.challengeProducer;
@@ -14,11 +14,12 @@ function createDoBidCycleTask(execlib){
     }
     this.sink.destroyed.attachForSingleShot(this.destroy.bind(this));
   }
-  DoBidCycleTask.prototype.destroy = function(){
+  lib.inherit(DoBidCycleTask,SinkTask);
+  DoBidCycleTask.prototype.__cleanUp = function(){
     this.challengeProducer = null;
     this.bidobject = null;
     this.sink = null;
-    Task.prototype.destroy.call(this);
+    SinkTask.prototype.__cleanUp.call(this);
   };
   DoBidCycleTask.prototype.go = function(){
     this.sink.call('bid',this.bidobject).done(
