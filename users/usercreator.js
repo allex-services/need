@@ -14,7 +14,11 @@ function createUser(execlib,ParentUser){
     ParentUser.prototype.__cleanUp.call(this);
   };
   User.prototype._onChallengeProduced = function(defer,bidticket,challenge){
-    if(!challenge){
+    var und;
+    if(und === challenge){
+      this.__service.bids.remove(bidticket);
+      defer.resolve({rejected:true});
+    }else if(und === null){
       this.__service.bids.remove(bidticket);
       defer.resolve({ok:bidticket});
     }else{
