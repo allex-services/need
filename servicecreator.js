@@ -11,7 +11,7 @@ function createNeedService(execlib,ParentServicePack){
 
   function NeedService(prophash){
     ParentService.call(this,prophash);
-    this.challenges = new lib.Map();
+    this.bids = new lib.Map();
     var state = this.state;
     this.needFields.forEach(function(need){
       state.set(need,prophash[need]);
@@ -19,8 +19,8 @@ function createNeedService(execlib,ParentServicePack){
   }
   ParentService.inherit(NeedService,factoryCreator);
   NeedService.prototype.__cleanUp = function(){
-    this.challenges.destroy();
-    this.challenges = null;
+    this.bids.destroy();
+    this.bids = null;
     ParentService.prototype.__cleanUp.call(this);
   };
   NeedService.prototype.needFields = [];
