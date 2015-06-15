@@ -1,4 +1,5 @@
 function createNeedService(execlib,ParentServicePack){
+  'use strict';
   var ParentService = ParentServicePack.Service,
       lib = execlib.lib;
 
