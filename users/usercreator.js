@@ -57,6 +57,10 @@ function createUser(execlib,ParentUser){
     }
   };
   User.prototype.bid = function(offering,defer){
+    if(!this.destroyed){
+      defer.resove({rejected:true});
+      return;
+    }
     if(!this.canAcceptMoreBids()){
       defer.reject('Cannot accept more bids');
       return;
