@@ -40,18 +40,19 @@ function createUser(execlib,ParentUser){
   User.prototype.__cleanUp = function(){
     ParentUser.prototype.__cleanUp.call(this);
   };
-  User.prototype._onChallengeProduced = function(defer,bidticket,challenge){
+  User.prototype._onChallengeProduced = function(defer,bidticket,userinput,challenge){
     var cs = this.challengeStatus(challenge);
     if(cs < 0){
-      console.log('bid rejected');
+      console.log('bid', userinput, 'rejected');
       this.removeBid(bidticket);
       defer.resolve({rejected:true});
     }else if(cs === 0){
       console.log('bid',challenge,'accepted');
       this.removeBid(bidticket);
+      this.__service.exposeBid(userinput);
       defer.resolve({a:bidticket});
     }else{
-      console.log('bid resulted in challenge');
+      console.log('bid', userinput, 'resulted in challenge', challenge);
       this.replaceBid(bidticket,challenge);
       defer.resolve({bid:bidticket,c:challenge});
     }
@@ -76,7 +77,7 @@ function createUser(execlib,ParentUser){
     var cd = q.defer();
     this.produceChallenge(offering,bidticket,cd);
     cd.promise.done(
-      this._onChallengeProduced.bind(this,defer,bidticket),
+      this._onChallengeProduced.bind(this,defer,bidticket,offering),
       defer.reject.bind(defer)
     );
   };
@@ -89,7 +90,7 @@ function createUser(execlib,ParentUser){
     var rd = q.defer();
     this.checkChallengeResponse(bidticket,bid.content,response,rd);
     rd.promise.done(
-      this._onChallengeProduced.bind(this,defer,bidticket),
+      this._onChallengeProduced.bind(this,defer,bidticket,response),
       defer.reject.bind(rd)
     );
   };
