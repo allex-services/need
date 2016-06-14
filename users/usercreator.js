@@ -82,6 +82,10 @@ function createUser(execlib,ParentUser){
     );
   };
   User.prototype.respond = function(bidticket,response,defer){
+    if (!this.__service) {
+      defer.reject(new lib.Error('SERVICE_DYING'));
+      return;
+    }
     var bid = this.__service.bids.get(bidticket);
     if(!bid){
       defer.reject('No challenge for bidticket '+bidticket);
@@ -113,9 +117,15 @@ function createUser(execlib,ParentUser){
     return 1;
   };
   User.prototype.addBid = function(bidticket,content){
+    if (!this.__service) {
+      return;
+    }
     this.__service.bids.add(bidticket,new Bid(this,bidticket,content));
   };
   User.prototype.removeBid = function(bidticket){
+    if (!this.__service) {
+      return;
+    }
     var b = this.__service.bids.remove(bidticket);
     if(b){
       b.destroy();
