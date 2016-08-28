@@ -10,13 +10,15 @@ function createDoBidCycleTask(execlib){
     this.bidobject = prophash.bidobject;
     this.challengeProducer = prophash.challengeProducer;
     this.cb = prophash.cb;
+    this.errorcb = prophash.errorcb;
     if('function' !== typeof this.cb){
       throw new lib.Error('CB_NOT_A_FUNCTION');
     }
-    this.sink.destroyed.attachForSingleShot(this.destroy.bind(this));
   }
   lib.inherit(DoBidCycleTask,SinkTask);
   DoBidCycleTask.prototype.__cleanUp = function(){
+    this.errorcb = null;
+    this.cb = null;
     this.challengeProducer = null;
     this.bidobject = null;
     this.sink = null;
@@ -46,8 +48,12 @@ function createDoBidCycleTask(execlib){
     }
   };
   DoBidCycleTask.prototype.onBidFailed = function(reason){
-    console.log('For bid object',this.bidobject,'bid failed',reason);
+    var errorcb = this.errorcb;
+    this.log('For bid object',this.bidobject,'bid failed',reason);
     this.destroy();
+    if (errorcb) {
+      errorcb();
+    }
   };
   DoBidCycleTask.prototype.respondToChallenge = function(bidticket,response){
     if(response === null){
