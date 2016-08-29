@@ -49,7 +49,9 @@ function createDoBidCycleTask(execlib){
   };
   DoBidCycleTask.prototype.onBidFailed = function(reason){
     var errorcb = this.errorcb;
-    this.log('For bid object',this.bidobject,'bid failed',reason);
+    if (this.log) {
+      this.log('For bid object',this.bidobject,'bid failed',reason);
+    }
     this.destroy();
     if (errorcb) {
       errorcb();
