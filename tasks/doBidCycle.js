@@ -69,9 +69,13 @@ function createDoBidCycleTask(execlib){
   };
   DoBidCycleTask.prototype.onResponseResult = function(responseresult){
     if(responseresult.c){
-      this.onBidResult(responseresult);
+      if (this.onBidResult) {
+        this.onBidResult(responseresult);
+      }
     }else if(responseresult.a){
-      this.cb(responseresult.a);
+      if (this.cb) {
+        this.cb(responseresult.a);
+      }
       this.destroy();
     }
   };
