@@ -9,7 +9,7 @@ function createUser(execlib,ParentUser){
 
   function Bid(user,bidticket,content){
     this.username = user.get('name');
-    console.log('new Bid from user',this.username);
+    //console.log('new Bid from user',this.username);
     this.content = content;
     this.timeout = content.timeout ? 
       lib.runNext(this.removeBid.bind(this,true,user,bidticket),content.timeout*1000)
@@ -43,16 +43,16 @@ function createUser(execlib,ParentUser){
   User.prototype._onChallengeProduced = function(defer,bidticket,userinput,challenge){
     var cs = this.challengeStatus(challenge);
     if(cs < 0){
-      console.log('bid', userinput, 'rejected');
+      //console.log('bid', userinput, 'rejected');
       this.removeBid(bidticket);
       defer.resolve({rejected:true});
     }else if(cs === 0){
-      console.log('bid',challenge,'accepted');
+      //console.log('bid',challenge,'accepted');
       this.removeBid(bidticket);
       this.__service.exposeBid(userinput);
       defer.resolve({a:bidticket});
     }else{
-      console.log('bid', userinput, 'resulted in challenge', challenge);
+      //console.log('bid', userinput, 'resulted in challenge', challenge);
       this.replaceBid(bidticket,challenge);
       defer.resolve({bid:bidticket,c:challenge});
     }
@@ -138,7 +138,7 @@ function createUser(execlib,ParentUser){
     }
   };
   User.prototype.removeMyBid = function(myname,bid,bidticket){
-    console.log(myname,'checking',bid,'with',bidticket);
+    //console.log(myname,'checking',bid,'with',bidticket);
     if(bid.username===myname){
       bid.removeBid(false,this,bidticket);
       bid.destroy();
