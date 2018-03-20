@@ -132,7 +132,11 @@ function createUser(execlib,ParentUser){
     }
   };
   User.prototype.replaceBid = function(bidticket,newcontent){
-    var b = this.__service.bids.replace(bidticket,new Bid(this,bidticket,newcontent));
+    var b;
+    if (!(this.__service && this.__service.bids)) {
+      return;
+    }
+    b = this.__service.bids.replace(bidticket,new Bid(this,bidticket,newcontent));
     if(b){
       b.destroy();
     }
