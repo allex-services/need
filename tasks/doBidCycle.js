@@ -31,12 +31,17 @@ function createDoBidCycleTask(execlib){
     );
   };
   DoBidCycleTask.prototype.onBidResult = function(bidresult){
+    var defer;
     if(!bidresult.bid){
       this.destroy();
       return;
     }
     if(bidresult.c){
-      var defer = q.defer();
+      if (!lib.isFunction(this.challengeProducer)) {
+        this.destroy();
+        return;
+      }
+      defer = q.defer();
       this.challengeProducer(bidresult.c,defer);
       defer.promise.done(
         this.respondToChallenge.bind(this,bidresult.bid),
