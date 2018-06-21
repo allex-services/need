@@ -49,6 +49,10 @@ function createUser(execlib,ParentUser){
     }else if(cs === 0){
       //console.log('bid',challenge,'accepted');
       this.removeBid(bidticket);
+      if (!this.__service) {
+        defer.resolve({rejected:true});
+        return;
+      }
       this.__service.exposeBid(userinput);
       defer.resolve({a:bidticket});
     }else{
@@ -59,7 +63,7 @@ function createUser(execlib,ParentUser){
   };
   User.prototype.bid = function(offering,defer){
     if(!this.destroyed){
-      defer.resove({rejected:true});
+      defer.resolve({rejected:true});
       return;
     }
     if(!this.canAcceptMoreBids()){
