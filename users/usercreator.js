@@ -35,7 +35,9 @@ function createUser(execlib,ParentUser){
   }
   ParentUser.inherit(User,require('../methoddescriptors/user'));
   User.prototype.onAboutToDie = function(){
-    this.__service.bids.traverse(this.removeMyBid.bind(this,this.get('name')));
+    if (this.__service && this.__service.bids) {
+      this.__service.bids.traverse(this.removeMyBid.bind(this,this.get('name')));
+    }
   };
   User.prototype.__cleanUp = function(){
     ParentUser.prototype.__cleanUp.call(this);
