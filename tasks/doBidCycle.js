@@ -3,6 +3,7 @@ function createDoBidCycleTask(execlib){
   var lib = execlib.lib,
       q = lib.q,
       execSuite = execlib.execSuite,
+      taskRegistry = execSuite.taskRegistry,
       SinkTask = execSuite.SinkTask;
   function DoBidCycleTask(prophash){
     SinkTask.call(this,prophash);
@@ -25,10 +26,19 @@ function createDoBidCycleTask(execlib){
     SinkTask.prototype.__cleanUp.call(this);
   };
   DoBidCycleTask.prototype.go = function(){
+    taskRegistry.run('invokeSessionMethod',{
+      sink: this.sink,
+      methodname: 'bid',
+      params: [this.bidobject],
+      onSuccess: this.onBidResult.bind(this),
+      onError: this.onBidFailed.bind(this)
+    });
+    /*
     this.sink.call('bid',this.bidobject).done(
       this.onBidResult.bind(this),
       this.onBidFailed.bind(this)
     );
+    */
   };
   DoBidCycleTask.prototype.onBidResult = function(bidresult){
     var defer;
@@ -63,14 +73,26 @@ function createDoBidCycleTask(execlib){
     }
   };
   DoBidCycleTask.prototype.respondToChallenge = function(bidticket,response){
+    if (!this.sink) {
+      return;
+    }
     if(response === null){
       this.destroy();
       return;
     }
+    taskRegistry.run('invokeSessionMethod',{
+      sink: this.sink,
+      methodname: 'respond',
+      params: [bidticket, response],
+      onSuccess: this.onResponseResult.bind(this),
+      onError: this.onResponseFailed.bind(this,response)
+    });
+    /*
     this.sink.call('respond',bidticket,response).done(
       this.onResponseResult.bind(this),
       this.onResponseFailed.bind(this,response)
     );
+    */
   };
   DoBidCycleTask.prototype.onResponseResult = function(responseresult){
     if(responseresult.c){

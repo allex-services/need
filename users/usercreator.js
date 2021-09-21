@@ -1,44 +1,92 @@
 function createUser(execlib,ParentUser){
   'use strict';
   var lib = execlib.lib,
-      q = lib.q;
+      q = lib.q,
+      qlib = lib.qlib,
+      execSuite = execlib.execSuite;
 
   if(!ParentUser){
     ParentUser = execlib.execSuite.ServicePack.Service.prototype.userFactory.get('user');
   }
 
-  function Bid(user,bidticket,content){
-    this.username = user.get('name');
-    //console.log('new Bid from user',this.username);
-    this.content = content;
-    this.timeout = content.timeout ? 
-      lib.runNext(this.removeBid.bind(this,true,user,bidticket),content.timeout*1000)
-      :
-      null; 
+  var ParentUserSession = ParentUser.prototype.getSessionCtor('.');
+
+  function UserSession (user,session,gate) {
+    ParentUserSession.call(this,user,session,gate);
   }
-  Bid.prototype.destroy = function(){
-    if(this.timeout){
-      lib.clearTimeout(this.timeout);
-    }
-    this.username = null;
-    this.content = null;
+  ParentUserSession.inherit(UserSession,{
+    bid:[{
+      title: 'Bid offering',
+      type: 'object'
+    }],
+    respond:[{
+      title: 'Bid ticket',
+      type: 'string', //a laarge number actually
+    },{
+      title: 'Response to bid challenge',
+      type: 'object'
+    }]
+  });
+  UserSession.prototype.__cleanUp = function () {
+    ParentUserSession.prototype.__cleanUp.call(this);
   };
-  Bid.prototype.removeBid = function(docleartimeout,user,bidticket){
-    if(docleartimeout){
-      this.timeout = null;
+  UserSession.prototype.bid = function(offering, defer) {
+    if (!(this.user && this.user.__service)) {
+      defer.reject(new lib.Error('ALREADY_DESTROYED', 'This instance is already destroyed'));
     }
-    user.removeBid(bidticket);
+    this.user.__service.queue(this, offering, defer);
+  };
+  UserSession.prototype.runBid = function (bidticket, offering) {
+    var defer = q.defer(), ret = defer.promise;
+    var userbiddefer = q.defer();
+    userbiddefer.promise.done(
+      this.onUserBid.bind(this, bidticket, defer),
+      defer.reject.bind(defer)
+    );
+    this.user.bid(bidticket, offering, userbiddefer);
+    bidticket = null;
+    defer = null;
+    return ret;
+  };
+  UserSession.prototype.onUserBid = function (bidticket, defer, userbidresponse){
+    defer.resolve(userbidresponse);
+    bidticket = null;
+    defer = null;
+  };
+  UserSession.prototype.respond = function(bidticket,response,defer){
+    if (!(
+      this.user &&
+      this.user.destroyed &&
+      this.user.__service &&
+      this.user.__service.activeJob
+    )){
+      defer.reject(new lib.Error('ALREADY_DESTROYED'));
+      return;
+    }
+    var bid = this.user.__service.activeJob.checkResponse(this, bidticket, response);
+    if (!bid) {
+      defer.reject(new lib.Error('BIDDING_MISMATCH'));
+      return;
+    }
+    var userresponddefer = q.defer();
+    userresponddefer.promise.done(
+      this.onUserRespond.bind(this, bidticket, defer),
+      defer.reject.bind(defer)
+    );
+    this.user.respond(bidticket, bid, response, userresponddefer);
+    bidticket = null;
+    defer = null;
+  };
+  UserSession.prototype.onUserRespond = function (bidticket, defer, userrespondresult) {
+    defer.resolve(userrespondresult);
+    bidticket = null;
+    defer = null;
   };
 
   function User(prophash){
     ParentUser.call(this,prophash);
   }
   ParentUser.inherit(User,require('../methoddescriptors/user'));
-  User.prototype.onAboutToDie = function(){
-    if (this.__service && this.__service.bids) {
-      this.__service.bids.traverse(this.removeMyBid.bind(this,this.get('name')));
-    }
-  };
   User.prototype.__cleanUp = function(){
     ParentUser.prototype.__cleanUp.call(this);
   };
@@ -46,11 +94,9 @@ function createUser(execlib,ParentUser){
     var cs = this.challengeStatus(challenge);
     if(cs < 0){
       //console.log('bid', userinput, 'rejected');
-      this.removeBid(bidticket);
       defer.resolve({rejected:true});
     }else if(cs === 0){
       //console.log('bid',challenge,'accepted');
-      this.removeBid(bidticket);
       if (!this.__service) {
         defer.resolve({rejected:true});
         return;
@@ -59,25 +105,12 @@ function createUser(execlib,ParentUser){
       defer.resolve({a:bidticket});
     }else{
       //console.log('bid', userinput, 'resulted in challenge', challenge);
-      this.replaceBid(bidticket,challenge);
       defer.resolve({bid:bidticket,c:challenge});
     }
   };
-  User.prototype.bid = function(offering,defer){
+  User.prototype.bid = function(bidticket, offering,defer){
     if(!this.destroyed){
       defer.resolve({rejected:true});
-      return;
-    }
-    if(!this.canAcceptMoreBids()){
-      defer.reject('Cannot accept more bids');
-      return;
-    }
-    var bidticket = lib.uid();
-    try{
-      this.addBid(bidticket,offering);
-    }
-    catch(e){
-      defer.reject('Internal error: duplicate bid ticket');
       return;
     }
     var cd = q.defer();
@@ -86,15 +119,17 @@ function createUser(execlib,ParentUser){
       this._onChallengeProduced.bind(this,defer,bidticket,offering),
       defer.reject.bind(defer)
     );
+    defer = null;
+    bidticket = null;
+    offering = null;
   };
-  User.prototype.respond = function(bidticket,response,defer){
+  User.prototype.respond = function(bidticket,bid,response,defer){
     if (!this.__service) {
       defer.reject(new lib.Error('SERVICE_DYING'));
       return;
     }
-    var bid = this.__service.bids.get(bidticket);
     if(!bid){
-      defer.reject('No challenge for bidticket '+bidticket);
+      defer.reject(new lib.Error('NO_CHALLENGE_FOR_BID', 'No challenge for bidticket '+bidticket));
       return;
     }
     var rd = q.defer();
@@ -103,9 +138,9 @@ function createUser(execlib,ParentUser){
       this._onChallengeProduced.bind(this,defer,bidticket,response),
       defer.reject.bind(rd)
     );
-  };
-  User.prototype.canAcceptMoreBids = function(){
-    return true;
+    defer = null;
+    bidticket = null;
+    response = null;
   };
   User.prototype.produceChallenge = function(offering,bidticket,defer){
     defer.resolve(null);
@@ -122,38 +157,8 @@ function createUser(execlib,ParentUser){
     }
     return 1;
   };
-  User.prototype.addBid = function(bidticket,content){
-    if (!this.__service) {
-      return;
-    }
-    this.__service.bids.add(bidticket,new Bid(this,bidticket,content));
-  };
-  User.prototype.removeBid = function(bidticket){
-    if (!this.__service) {
-      return;
-    }
-    var b = this.__service.bids.remove(bidticket);
-    if(b){
-      b.destroy();
-    }
-  };
-  User.prototype.replaceBid = function(bidticket,newcontent){
-    var b;
-    if (!(this.__service && this.__service.bids)) {
-      return;
-    }
-    b = this.__service.bids.replace(bidticket,new Bid(this,bidticket,newcontent));
-    if(b){
-      b.destroy();
-    }
-  };
-  User.prototype.removeMyBid = function(myname,bid,bidticket){
-    //console.log(myname,'checking',bid,'with',bidticket);
-    if(bid.username===myname){
-      bid.removeBid(false,this,bidticket);
-      bid.destroy();
-    }
-  };
+
+  User.prototype.getSessionCtor = execSuite.userSessionFactoryCreator(UserSession);
 
   return User;
 }

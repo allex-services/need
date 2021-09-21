@@ -1,4 +1,5 @@
 module.exports = {
+  /*
   bid:[{
     title: 'Bid offering',
     type: 'object'
@@ -10,4 +11,5 @@ module.exports = {
     title: 'Response to bid challenge',
     type: 'object'
   }]
+  */
 };
