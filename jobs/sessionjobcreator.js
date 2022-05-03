@@ -50,7 +50,7 @@ function createSessionJob (execlib, mylib) {
       return ok.val;
     }
     this.getService().activeJob = this;
-    this.useSession();
+    lib.runNext(this.useSession.bind(this));
     return ok.val;
   };
 
