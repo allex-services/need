@@ -9,12 +9,16 @@ function createBidHandlerJob (execlib, mylib) {
     this.bidticket = lib.uid();
     this.bid = bid;
     this.challengedefer = challengedefer;
+    this.bidActivated = false;
+    this.oobError = null;
     if (this.bid && this.bid.content && this.bid.content.timeout) {
       lib.runNext(this.onTimeout.bind(this), this.bid.content.timeout*lib.intervals.Second);
     }
   }
   lib.inherit(BidHandlerJob, SessionJob);
   BidHandlerJob.prototype.destroy = function () {
+    this.oobError = null;
+    this.bidActivated = null;
     if (this.challengedefer) {
       this.challengedefer.reject(new lib.Error('DESTROYED', 'This bidding cycle is closed'));
     }
@@ -24,13 +28,23 @@ function createBidHandlerJob (execlib, mylib) {
     SessionJob.prototype.destroy.call(this);
   };
   BidHandlerJob.prototype.onTimeout = function () {
+    var error;
     if (!this.okToProceed()) {
       return;
     }
-    this.reject(new lib.Error('BID_TIMEOUT', this.bidticket));
+    error = new lib.Error('BID_TIMEOUT', this.bidticket);
+    if (this.bidActivated) {
+      this.reject(error);
+      return;
+    }
+    this.oobError = error;
   };
   BidHandlerJob.prototype.useSession = function () {
     if (!this.okToProceed()) {
+      return;
+    }
+    if (this.oobError) {
+      this.reject(this.oobError);
       return;
     }
     try {

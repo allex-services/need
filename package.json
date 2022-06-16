@@ -1,6 +1,6 @@
 {
   "name": "allex_needservice",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "NeedService",
   "main": "index.js",
   "scripts": {
